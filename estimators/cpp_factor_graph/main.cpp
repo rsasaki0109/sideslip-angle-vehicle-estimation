@@ -12,6 +12,7 @@
 
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
@@ -473,8 +474,9 @@ void slip_angle_smoother()
 {
     mrpt::system::CTimeLogger profiler(true, "slip_angle_smoother");
 
-    const auto sBeta    = gtsam::SymbolGenerator('b');
-    const auto sYawRate = gtsam::SymbolGenerator('r');
+    const auto sBeta = [](int idx) { return gtsam::Symbol('b', idx); };
+    const auto sYawRate = [](int idx) { return gtsam::Symbol('r', idx); };
+
 
     const auto carDataset = load_car_dataset(arg_race_dir.getValue());
 
@@ -599,6 +601,7 @@ void slip_angle_smoother()
     gtsam::Values estimated;
 
     auto optParam          = gtsam::GaussNewtonParams();
+    // auto optParam          = gtsam::LevenbergMarquardtParams();
     optParam.maxIterations = 1;
 
     const int fixedLagWindowLen = arg_fixed_lag_window.getValue();
@@ -606,13 +609,13 @@ void slip_angle_smoother()
     {
         mrpt::system::CTimeLoggerEntry tle2(profiler, "2.optimize_fg");
 
-        optParam.iterationHook =
-            [&wholeFG](size_t iter, double errBef, double errAfter) {
-                const auto N = wholeFG.size();
-                std::cout << "LM iter #" << iter
-                          << " rmse: " << std::sqrt(errBef / N) << " -> "
-                          << std::sqrt(errAfter / N) << std::endl;
-            };
+        // optParam.iterationHook =
+        //     [&wholeFG](size_t iter, double errBef, double errAfter) {
+        //         const auto N = wholeFG.size();
+        //         std::cout << "LM iter #" << iter
+        //                   << " rmse: " << std::sqrt(errBef / N) << " -> "
+        //                   << std::sqrt(errAfter / N) << std::endl;
+        //     };
 
         gtsam::GaussNewtonOptimizer optimizer(wholeFG, wholeValues, optParam);
 
@@ -717,8 +720,7 @@ void slip_angle_smoother()
         std::cout << "======== FACTOR ERRORS ============\n";
         // smoother.getFactors().
         wholeFG.printErrors(
-            estimated, "FACTOR ERRORS: ", gtsam::DefaultKeyFormatter,
-            lmbdPrintErr);
+            estimated, "Initial Error", gtsam::DefaultKeyFormatter);
     }
 
     const auto prefix = arg_output_prefix.getValue();
@@ -783,8 +785,9 @@ void test_factor_beta()
 #define EXPECT ASSERT_
     const std::string name_ = "FactorBeta";
 
-    const auto sBeta    = gtsam::SymbolGenerator('b');
-    const auto sYawRate = gtsam::SymbolGenerator('r');
+    const auto sBeta = [](int idx) { return gtsam::Symbol('b', idx); };
+    const auto sYawRate = [](int idx) { return gtsam::Symbol('r', idx); };
+
 
     auto noise = gtsam::noiseModel::Diagonal::Sigmas(gtsam::Vector1(1.0));
     CarParameters cp;
@@ -811,8 +814,9 @@ void test_factor_rate()
 #define EXPECT ASSERT_
     const std::string name_ = "FactorRate";
 
-    const auto sBeta    = gtsam::SymbolGenerator('b');
-    const auto sYawRate = gtsam::SymbolGenerator('r');
+    const auto sBeta = [](int idx) { return gtsam::Symbol('b', idx); };
+    const auto sYawRate = [](int idx) { return gtsam::Symbol('r', idx); };
+
 
     auto noise = gtsam::noiseModel::Diagonal::Sigmas(gtsam::Vector1(1.0));
     CarParameters cp;
@@ -840,8 +844,9 @@ void test_factor_lateral_acceleration()
 #define EXPECT ASSERT_
     const std::string name_ = "FactorLateralAcceleration";
 
-    const auto sBeta    = gtsam::SymbolGenerator('b');
-    const auto sYawRate = gtsam::SymbolGenerator('r');
+    const auto sBeta = [](int idx) { return gtsam::Symbol('b', idx); };
+    const auto sYawRate = [](int idx) { return gtsam::Symbol('r', idx); };
+
 
     auto noise = gtsam::noiseModel::Diagonal::Sigmas(gtsam::Vector1(1.0));
     CarParameters cp;
